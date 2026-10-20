@@ -1,0 +1,30 @@
+// Types for {{moduleName}}
+export interface {{pascalCase name}}Item {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface {{pascalCase name}}CreateInput {
+  code: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface {{pascalCase name}}UpdateInput extends Partial<{{pascalCase name}}CreateInput> {
+  id: string;
+}
+
+export interface {{pascalCase name}}Filter {
+  search?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
