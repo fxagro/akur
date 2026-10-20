@@ -99,10 +99,6 @@ export async function saveFixedAsset(input: unknown): Promise<{ ok: true; id: st
   }
 }
 
-function isUniqueError(e: unknown): boolean {
-  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
-}
-
 export async function toggleAssetActive(
   id: string,
   isActive: boolean
