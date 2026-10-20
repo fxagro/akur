@@ -1,0 +1,117 @@
+// Server actions for {{moduleName}}
+
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
+import { requirePermission } from "@/lib/auth-context";
+import { z } from "zod";
+import { Prisma } from "@prisma/client";
+
+const createSchema = z.object({
+  code: z.string().trim().min(1, "Kode wajib diisi").max(30),
+  name: z.string().trim().min(1, "Nama wajib diisi").max(150),
+  description: z.string().max(500).optional().nullable(),
+  isActive: z.boolean().optional().default(true),
+});
+
+const updateSchema = z.object({
+  id: z.string().min(1),
+  code: z.string().trim().min(1).max(30).optional(),
+  name: z.string().trim().min(1).max(150).optional(),
+  description: z.string().max(500).optional().nullable(),
+  isActive: z.boolean().optional(),
+});
+
+export type {{pascalCase name}}CreateInput = z.infer<typeof createSchema>;
+export type {{pascalCase name}}UpdateInput = z.infer<typeof updateSchema>;
+export type {{pascalCase name}}ActionResult = { ok: true; id: string } | { ok: false; error: string };
+
+function isUniqueError(e: unknown): boolean {
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+}
+
+export async function create{{pascalCase name}}(input: unknown): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const ctx = await requirePermission("{{kebabCase name}}.manage");
+  const parsed = createSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Data tidak valid" };
+  }
+  const data = parsed.data;
+
+  try {
+    await prisma.{{camelCase name}}.create({
+      data: {
+        companyId: ctx.company.id,
+        ...data,
+      },
+    });
+    revalidatePath("/{{kebabCase name}}");
+    return { ok: true, id: "new-id" };
+  } catch (e) {
+    if (isUniqueError(e)) {
+      return { ok: false, error: `{{pascalCase name}} dengan kode "${data.code}" sudah ada.` };
+    }
+    throw e;
+  }
+}
+
+export async function update{{pascalCase name}}(input: unknown): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const ctx = await requirePermission("{{kebabCase name}}.manage");
+  const parsed = updateSchema.safeParse(input);
+  if (!parsed.success || !parsed.data.id) {
+    return { ok: false, error: "Data tidak valid." };
+  }
+  const data = parsed.data;
+
+  const existing = await prisma.{{camelCase name}}.findFirst({
+    where: { id: data.id, companyId: ctx.company.id },
+  });
+  if (!existing) return { ok: false, error: "{{pascalCase name}} tidak ditemukan." };
+
+  try {
+    await prisma.{{camelCase name}}.update({
+      where: { id: existing.id },
+      data: {
+        code: data.code,
+        name: data.name,
+        description: data.description,
+        isActive: data.isActive,
+      },
+    });
+    revalidatePath("/{{kebabCase name}}");
+    return { ok: true, id: existing.id };
+  } catch (e) {
+    if (isUniqueError(e)) {
+      return { ok: false, error: `{{pascalCase name}} dengan kode "${data.code}" sudah ada.` };
+    }
+    throw e;
+  }
+}
+
+export async function toggle{{pascalCase name}}Active(
+  id: string,
+  isActive: boolean
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const ctx = await requirePermission("{{kebabCase name}}.manage");
+  const res = await prisma.{{camelCase name}}.updateMany({
+    where: { id, companyId: ctx.company.id },
+    data: { isActive },
+  });
+  if (res.count === 0) return { ok: false, error: "{{pascalCase name}} tidak ditemukan." };
+  revalidatePath("/{{kebabCase name}}");
+  return { ok: true };
+}
+
+export async function delete{{pascalCase name}}(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
+  const ctx = await requirePermission("{{kebabCase name}}.manage");
+  const item = await prisma.{{camelCase name}}.findFirst({
+    where: { id, companyId: ctx.company.id },
+    include: { _count: { select: { /* related items */ } } },
+  });
+  if (!item) return { ok: false, error: "{{pascalCase name}} tidak ditemukan." };
+
+  await prisma.{{camelCase name}}.delete({ where: { id } });
+  revalidatePath("/{{kebabCase name}}");
+  return { ok: true };
+}
