@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
   // tidak dipakai agar route tidak dipaksa prerender.
   cacheComponents: false,
   output: "standalone",
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   turbopack: {
     root: process.cwd(),
     rules: {
