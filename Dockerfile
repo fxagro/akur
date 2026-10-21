@@ -1,26 +1,35 @@
 FROM node:20-alpine AS base
 
-# Install dependencies only when needed
-FROM base AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+# ---------------------------------------------------------------------------
+# Dependencies. Workspace package.json wajib ikut di-copy sebelum `npm ci`
+# supaya npm dapat menautkan workspace (packages/*).
+# ---------------------------------------------------------------------------
+FROM base AS deps
+COPY package.json package-lock.json .npmrc ./
+COPY packages/core/package.json ./packages/core/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/registry/package.json ./packages/registry/
 RUN npm ci
 
-# Rebuild the source code only when needed
+# ---------------------------------------------------------------------------
+# Build
+# ---------------------------------------------------------------------------
 FROM base AS builder
-WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
 RUN npx prisma generate
+RUN npm run build:packages
 
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Production image, copy all the files and run next
+# ---------------------------------------------------------------------------
+# Production image
+# ---------------------------------------------------------------------------
 FROM base AS runner
 WORKDIR /app
 
@@ -43,5 +52,8 @@ EXPOSE 3000
 
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/login > /dev/null || exit 1
 
 CMD ["npm", "run", "start"]
