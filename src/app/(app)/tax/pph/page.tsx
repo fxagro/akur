@@ -57,7 +57,7 @@ export default async function TaxPphPage({
         <TaxPphClient
           rows={rows}
           taxCodes={formattedTaxCodes}
-          canManage={ctx.permissions.has("tax.manage")}
+          canManage={canManage}
         />
       </Card>
     </div>

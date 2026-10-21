@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
-import { Card, PageHeader, Badge } from "@/components/ui";
+import { Card, PageHeader } from "@/components/ui";
 import { formatCurrency } from "@/lib/format";
 import Link from "next/link";
 
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function TaxPage() {
   const ctx = await requirePermission("tax.view");
 
-  const [codesCount, outputCount, inputCount, pphCount, currentSpt] = await Promise.all([
+  const [codesCount, outputCount, inputCount, pphCount, ppnTotal] = await Promise.all([
     prisma.taxCode.count({ where: { companyId: ctx.company.id } }),
     prisma.taxInvoice.count({ where: { companyId: ctx.company.id, direction: "OUTPUT", date: { gte: new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)) } } }),
     prisma.taxInvoice.count({ where: { companyId: ctx.company.id, direction: "INPUT", refType: "PURCHASE_INVOICE", date: { gte: new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)) } } }),
@@ -24,7 +24,7 @@ export default async function TaxPage() {
     <div>
       <PageHeader title="Pajak" description="Kelola PPN, PPh, SPT & e-Faktur." />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5 mb-6">
         <Card className="p-5">
           <p className="text-sm text-slate-500">Kode Pajak</p>
           <p className="text-2xl font-bold text-slate-900">{codesCount}</p>
@@ -40,6 +40,12 @@ export default async function TaxPage() {
         <Card className="p-5">
           <p className="text-sm text-slate-500">PPh (Bulan Ini)</p>
           <p className="text-2xl font-bold text-amber-600">{pphCount}</p>
+        </Card>
+        <Card className="p-5">
+          <p className="text-sm text-slate-500">PPN Keluaran (Bulan Ini)</p>
+          <p className="text-2xl font-bold text-slate-900">
+            {formatCurrency(ppnTotal._sum.ppn?.toString() ?? "0")}
+          </p>
         </Card>
       </div>
 

@@ -1,6 +1,6 @@
 import { requirePermission } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
-import { Card, PageHeader, Badge } from "@/components/ui";
+import { Card, PageHeader } from "@/components/ui";
 import { formatCurrency } from "@/lib/format";
 import Link from "next/link";
 

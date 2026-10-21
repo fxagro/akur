@@ -21,7 +21,6 @@ const assetSchema = z.object({
   accumDepAccountId: z.string().optional().nullable(),
   depExpenseAccountId: z.string().optional().nullable(),
   note: z.string().trim().max(500).optional().nullable(),
-  isActive: z.boolean().optional().default(true),
 });
 
 export type AssetResult = { ok: true; id: string } | { ok: false; error: string };
@@ -99,6 +98,10 @@ export async function saveFixedAsset(input: unknown): Promise<{ ok: true; id: st
   }
 }
 
+/**
+ * Aktif/nonaktif aset dengan mengubah statusnya.
+ * DISPOSED berarti aset sudah dibuang, ACTIVE berarti masih dipakai.
+ */
 export async function toggleAssetActive(
   id: string,
   isActive: boolean
@@ -106,7 +109,7 @@ export async function toggleAssetActive(
   const ctx = await requirePermission("asset.manage");
   const res = await prisma.fixedAsset.updateMany({
     where: { id, companyId: ctx.company.id },
-    data: { isActive },
+    data: { status: isActive ? "ACTIVE" : "DISPOSED" },
   });
   if (res.count === 0) return { ok: false, error: "Aset tidak ditemukan." };
   revalidatePath("/assets");

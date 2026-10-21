@@ -22,10 +22,6 @@ export type BankTransactionRow = {
   bankAccountId: string;
 };
 
-function newLine(): { bankAccountId: string; date: string; description: string; debit: string; credit: string; refType: string; refId: string } {
-  return { bankAccountId: "", date: new Date().toISOString().slice(0, 10), description: "", debit: "0", credit: "0", refType: "OTHER", refId: "" };
-}
-
 function todayInput(): string {
   return new Date().toISOString().slice(0, 10);
 }

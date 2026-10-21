@@ -513,7 +513,6 @@ model TaxInvoice {
 model BankAccount {
   id             String   @id @default(cuid())
   companyId      String
-  code           String
   name           String
   bankName       String?
   accountNumber  String?
@@ -529,7 +528,6 @@ model BankAccount {
   salesReceipts  SalesReceipt[]
   purchasePayments PurchasePayment[]
 
-  @@unique([companyId, code])
   @@index([companyId])
 }
 

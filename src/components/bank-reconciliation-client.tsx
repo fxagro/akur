@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { saveReconciliation, getReconciliationData } from "@/lib/actions/bank-transaction-actions";
-import { Card, EmptyState, Input, Label, Badge } from "@/components/ui";
+import { Card, Input, Label, Badge } from "@/components/ui";
 import { formatCurrency, formatDate } from "@/lib/format";
 
 export type BankAccountSummary = {
@@ -51,16 +51,18 @@ export function ReconciliationClient({
   const [pendingAction, startTransitionAction] = useTransition();
   const [reconciledResult, setReconciledResult] = useState<string | null>(null);
 
-  const loadData = async () => {
-    try {
-      const data = await getReconciliationData(bankAccountId, statementDate);
-      setReconciliationData(data);
-      setClearedIds({});
-      setReconciledResult(null);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal memuat data");
-    }
+  const loadData = () => {
+    startTransition(async () => {
+      try {
+        const data = await getReconciliationData(bankAccountId, statementDate);
+        setReconciliationData(data);
+        setClearedIds({});
+        setReconciledResult(null);
+        setError(null);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Gagal memuat data");
+      }
+    });
   };
 
   const toggleClear = (id: string) => {
@@ -90,6 +92,7 @@ export function ReconciliationClient({
       if (res.ok) {
         setReconciledResult("Rekonsiliasi berhasil disimpan");
         loadData();
+        router.refresh();
       } else {
         setError(res.error);
       }
@@ -106,9 +109,10 @@ export function ReconciliationClient({
       <div className="mb-4 flex justify-end">
         <button
           onClick={loadData}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+          disabled={pending}
+          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Muat Data
+          {pending ? "Memuat..." : "Muat Data"}
         </button>
       </div>
 
@@ -135,13 +139,15 @@ export function ReconciliationClient({
               />
             </div>
             <div className="flex items-end">
-              <button
-                onClick={handleReconcile}
-                disabled={pendingAction}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:bg-slate-400"
-              >
-                {pendingAction ? "Menyimpan..." : "Simpan Rekonsiliasi"}
-              </button>
+              {canManage && (
+                <button
+                  onClick={handleReconcile}
+                  disabled={pendingAction}
+                  className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-700 disabled:bg-slate-400"
+                >
+                  {pendingAction ? "Menyimpan..." : "Simpan Rekonsiliasi"}
+                </button>
+              )}
             </div>
           </div>
 
@@ -199,13 +205,13 @@ export function ReconciliationClient({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {reconciliationData.transactions.map((t: any) => (
+                {reconciliationData.transactions.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50/60">
                     <td className="px-4 py-2">
                       <input
                         type="checkbox"
                         checked={!!clearedIds[t.id]}
-                        onChange={() => setClearedIds((prev) => ({ ...prev, [t.id]: !prev[t.id] }))}
+                        onChange={() => toggleClear(t.id)}
                       />
                     </td>
                     <td className="whitespace-nowrap px-4 py-2 text-slate-600">{formatDate(t.date)}</td>
@@ -245,8 +251,8 @@ export function ReconciliationClient({
         </Card>
       ) : (
         <div className="text-center py-8">
-          <button onClick={loadData} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
-            Pilih Tanggal & Muat Data
+          <button onClick={loadData} disabled={pending} className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60">
+            Pilih Tanggal &amp; Muat Data
           </button>
         </div>
       )}

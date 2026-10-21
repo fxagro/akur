@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { saveFixedAsset, toggleAssetActive, disposeAsset, deleteAsset } from "@/lib/actions/asset-actions";
+import { saveFixedAsset, toggleAssetActive, deleteAsset } from "@/lib/actions/asset-actions";
 import { Card, EmptyState, Input, Label, Select, Badge } from "@/components/ui";
 import { formatCurrency, formatDate } from "@/lib/format";
 
@@ -19,30 +19,45 @@ export type AssetRow = {
   method: "STRAIGHT_LINE" | "DECLINING_BALANCE";
   accumulatedDepreciation: string;
   bookValue: string;
-  isActive: boolean;
 };
 
-function emptyForm() {
+type AssetFormState = {
+  id?: string;
+  code: string;
+  name: string;
+  category: string;
+  status: "ACTIVE" | "DISPOSED";
+  acquisitionDate: string;
+  acquisitionCost: string;
+  usefulLifeMonths: string;
+  salvageValue: string;
+  method: "STRAIGHT_LINE" | "DECLINING_BALANCE";
+  assetAccountId: string;
+  accumDepAccountId: string;
+  depExpenseAccountId: string;
+  note: string;
+};
+
+function emptyForm(): AssetFormState {
   return {
     id: undefined,
     code: "",
     name: "",
     category: "",
-    status: "ACTIVE" as const,
+    status: "ACTIVE",
     acquisitionDate: new Date().toISOString().slice(0, 10),
     acquisitionCost: "0",
     usefulLifeMonths: "60",
     salvageValue: "0",
-    method: "STRAIGHT_LINE" as const,
+    method: "STRAIGHT_LINE",
     assetAccountId: "",
     accumDepAccountId: "",
     depExpenseAccountId: "",
     note: "",
-    isActive: true,
   };
 }
 
-function toForm(r: AssetRow) {
+function toForm(r: AssetRow): AssetFormState {
   return {
     id: r.id,
     code: r.code,
@@ -58,7 +73,6 @@ function toForm(r: AssetRow) {
     accumDepAccountId: "",
     depExpenseAccountId: "",
     note: "",
-    isActive: r.isActive,
   };
 }
 
@@ -99,7 +113,6 @@ export function AssetsClient({
         accumDepAccountId: form.accumDepAccountId,
         depExpenseAccountId: form.depExpenseAccountId,
         note: form.note,
-        isActive: form.isActive,
       });
       if (res.ok) {
         setForm(null);
@@ -223,12 +236,6 @@ export function AssetsClient({
             <div className="sm:col-span-2">
               <Label>Catatan</Label>
               <Input value={form.note} onChange={(e) => patch({ note: e.target.value })} placeholder="Opsional" />
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 text-sm text-slate-700">
-                <input type="checkbox" checked={form.isActive} onChange={(e) => patch({ isActive: e.target.checked })} />
-                Aktif
-              </label>
             </div>
           </div>
           <div className="mt-4 flex gap-2">

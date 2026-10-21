@@ -26,7 +26,6 @@ export default async function AssetsPage() {
         method: true,
         accumulatedDepreciation: true,
         bookValue: true,
-        isActive: true,
       },
     }),
     prisma.account.findMany({
@@ -49,7 +48,6 @@ export default async function AssetsPage() {
     method: r.method,
     accumulatedDepreciation: r.accumulatedDepreciation.toString(),
     bookValue: r.bookValue.toString(),
-    isActive: r.isActive,
   }));
 
   return (
@@ -60,7 +58,7 @@ export default async function AssetsPage() {
       />
 
       <Card className="p-5">
-        <AssetsClient rows={formatted} accounts={accounts.map((a) => ({ id: a.id, code: a.code, name: a.name }))} canManage={ctx.permissions.has("asset.manage")} />
+        <AssetsClient rows={formatted} accounts={accounts.map((a) => ({ id: a.id, code: a.code, name: a.name }))} canManage={canManage} />
       </Card>
     </div>
   );

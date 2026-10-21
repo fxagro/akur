@@ -1,32 +1,57 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 
+const LOCAL_SETTING_EVENT = "akur:local-setting";
+
+/**
+ * Baca/tulis preferensi sederhana di localStorage tanpa memicu setState di dalam
+ * efek (menjaga hidrasi SSR tetap konsisten dan lolos aturan react-hooks).
+ */
+function useLocalStorageSetting<T extends string>(key: string, fallback: T) {
+  const subscribe = useCallback((onChange: () => void) => {
+    window.addEventListener("storage", onChange);
+    window.addEventListener(LOCAL_SETTING_EVENT, onChange);
+    return () => {
+      window.removeEventListener("storage", onChange);
+      window.removeEventListener(LOCAL_SETTING_EVENT, onChange);
+    };
+  }, []);
+
+  const getSnapshot = useCallback(
+    () => (window.localStorage.getItem(key) as T | null) ?? fallback,
+    [key, fallback]
+  );
+
+  const getServerSnapshot = useCallback(() => fallback, [fallback]);
+
+  const value = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const setValue = useCallback(
+    (next: T) => {
+      window.localStorage.setItem(key, next);
+      window.dispatchEvent(new Event(LOCAL_SETTING_EVENT));
+    },
+    [key]
+  );
+
+  return [value, setValue] as const;
+}
+
 export default function HomePage() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [lang, setLang] = useState<"id" | "en">("id");
+  const [theme, setTheme] = useLocalStorageSetting<"dark" | "light">("sim_akur_theme", "dark");
+  const [lang, setLang] = useLocalStorageSetting<"id" | "en">("sim_akur_lang", "id");
   const [activeTab, setActiveTab] = useState<"invoice" | "journal" | "report" | "tax">("invoice");
   const [copied, setCopied] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // Initialize from localStorage if present
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("sim_akur_theme") as "dark" | "light" | null;
-    if (savedTheme) setTheme(savedTheme);
-    const savedLang = localStorage.getItem("sim_akur_lang") as "id" | "en" | null;
-    if (savedLang) setLang(savedLang);
-  }, []);
-
   const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    localStorage.setItem("sim_akur_theme", nextTheme);
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   const toggleLang = (newLang: "id" | "en") => {
     setLang(newLang);
-    localStorage.setItem("sim_akur_lang", newLang);
   };
 
   const copyCommand = () => {

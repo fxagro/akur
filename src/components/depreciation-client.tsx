@@ -3,8 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { runDepreciation, getAssetsForDepreciation } from "@/lib/actions/depreciation-actions";
-import { Card, EmptyState, Input, Label, Badge } from "@/components/ui";
-import { formatCurrency, formatDate } from "@/lib/format";
+import { Card, Input, Label } from "@/components/ui";
+import { formatCurrency } from "@/lib/format";
 
 export type DepreciationPreviewRow = {
   id: string;
@@ -15,17 +15,15 @@ export type DepreciationPreviewRow = {
 };
 
 export function DepreciationClient({
-  rows,
   canManage,
 }: {
-  rows: any[];
   canManage: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [periodDate, setPeriodDate] = useState(new Date().toISOString().slice(0, 7));
   const [previewData, setPreviewData] = useState<{
-    assets: any[];
+    assets: DepreciationPreviewRow[];
     total: string;
   } | null>(null);
   const [selectedAssets, setSelectedAssets] = useState<Record<string, boolean>>({});
@@ -33,7 +31,7 @@ export function DepreciationClient({
   const [runResult, setRunResult] = useState<string | null>(null);
   const [pendingAction, startTransitionAction] = useTransition();
 
-  const loadPreview = async () => {
+  const loadPreview = () => {
     setError(null);
     startTransition(async () => {
       try {
@@ -81,9 +79,10 @@ export function DepreciationClient({
       <div className="mb-4 flex justify-end">
         <button
           onClick={loadPreview}
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+          disabled={pending}
+          className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Muat Pratinjau
+          {pending ? "Memuat..." : "Muat Pratinjau"}
         </button>
       </div>
 
@@ -96,9 +95,10 @@ export function DepreciationClient({
           <div className="flex items-end">
             <button
               onClick={loadPreview}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+              disabled={pending}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Muat Pratinjau
+              {pending ? "Memuat..." : "Muat Pratinjau"}
             </button>
           </div>
         </div>
@@ -143,33 +143,46 @@ export function DepreciationClient({
                           onChange={toggleAll}
                         />
                       </th>
-                    <th className="px-4 py-2.5 font-medium">Kode</th>
-                    <th className="px-4 py-2.5 font-medium">Nama</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Nilai Buku</th>
-                    <th className="px-4 py-2.5 text-right font-medium">Penyusutan Bulanan</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {previewData.assets.map((a) => (
-                    <tr key={a.id} className="hover:bg-slate-50/60">
-                      <td className="px-4 py-2">
-                        <input
-                          type="checkbox"
-                          checked={!!selectedAssets[a.id]}
-                          onChange={() => setSelectedAssets((prev) => ({ ...prev, [a.id]: !prev[a.id] }))}
-                        />
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-2 font-mono text-xs text-slate-500">{a.code}</td>
-                      <td className="px-4 py-2 text-slate-700">{a.name}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-slate-800">{formatCurrency(a.bookValue)}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-emerald-600">{formatCurrency(a.monthlyDepreciation)}</td>
+                      <th className="px-4 py-2.5 font-medium">Kode</th>
+                      <th className="px-4 py-2.5 font-medium">Nama</th>
+                      <th className="px-4 py-2.5 text-right font-medium">Nilai Buku</th>
+                      <th className="px-4 py-2.5 text-right font-medium">Penyusutan Bulanan</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {previewData.assets.map((a) => (
+                      <tr key={a.id} className="hover:bg-slate-50/60">
+                        <td className="px-4 py-2">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedAssets[a.id]}
+                            onChange={() => toggleAsset(a.id)}
+                          />
+                        </td>
+                        <td className="whitespace-nowrap px-4 py-2 font-mono text-xs text-slate-500">{a.code}</td>
+                        <td className="px-4 py-2 text-slate-700">{a.name}</td>
+                        <td className="px-4 py-2 text-right tabular-nums text-slate-800">{formatCurrency(a.bookValue)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums text-emerald-600">{formatCurrency(a.monthlyDepreciation)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <button
+              onClick={loadPreview}
+              disabled={pending}
+              className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Pilih Tanggal &amp; Muat Data
+            </button>
+          </div>
+        )}
 
+        {previewData && canManage && (
           <div className="mt-4 flex items-center justify-between">
             <p className="text-sm text-slate-600">
               {Object.values(selectedAssets).filter(Boolean).length} aset dipilih
@@ -186,29 +199,19 @@ export function DepreciationClient({
               {pendingAction ? "Memproses..." : "Jalankan Penyusutan"}
             </button>
           </div>
+        )}
 
-          {runResult && (
-            <div className="mt-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
-              {runResult}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="text-center py-8">
-          <button
-            onClick={loadPreview}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
-          >
-            Pilih Tanggal & Muat Data
-          </button>
-        </div>
-      )}
+        {runResult && (
+          <div className="mt-4 p-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm">
+            {runResult}
+          </div>
+        )}
 
-      {error && (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
       </Card>
     </div>
   );

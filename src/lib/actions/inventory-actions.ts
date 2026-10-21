@@ -326,12 +326,11 @@ export async function saveStockMovement(input: unknown): Promise<MovementResult>
           data: { stockQty: item.stockQty.minus(qty) },
         });
       } else if (data.direction === "ADJUST") {
-        const diff = qty.minus(item.stockQty);
+        // Penyesuaian: qty berisi stok absolut baru, avgCost tidak berubah.
         await tx.item.update({
           where: { id: item.id },
           data: { stockQty: qty },
         });
-        // avgCost unchanged
       }
 
       return created.id;

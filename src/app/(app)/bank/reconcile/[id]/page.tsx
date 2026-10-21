@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requirePermission } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
 import { Card, PageHeader } from "@/components/ui";
@@ -36,12 +37,12 @@ export default async function BankReconcilePage({
         title={`Rekonsiliasi: ${displayName}`}
         description="Cocokkan saldo buku dengan pernyataan bank (bank statement)."
       >
-        <a
+        <Link
           href="/bank/transactions"
           className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 transition hover:bg-slate-50"
         >
           Kembali
-        </a>
+        </Link>
       </PageHeader>
 
       <Card className="p-5">

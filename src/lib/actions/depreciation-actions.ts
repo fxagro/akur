@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-context";
 import { Prisma } from "@/generated/prisma/client";
-import { postEntry } from "@/lib/accounting/posting";
+import { postEntry, type PostingLine } from "@/lib/accounting/posting";
 
 const depreciationRunSchema = z.object({
   periodDate: z.string().min(1, "Periode wajib diisi"),
@@ -16,7 +16,8 @@ export type DepreciationResult =
   | { ok: true; count: number; journalIds: string[] }
   | { ok: false; error: string };
 
-function toDec(v: number | string | null | undefined): Prisma.Decimal {
+function toDec(v: number | string | Prisma.Decimal | null | undefined): Prisma.Decimal {
+  if (v instanceof Prisma.Decimal) return v;
   const n = typeof v === "string" ? Number(v) : v ?? 0;
   return new Prisma.Decimal(Number.isFinite(n) ? n : 0);
 }
@@ -229,7 +230,7 @@ export async function runDepreciation(
           )
         );
 
-        const journalLines = [
+        const journalLines: PostingLine[] = [
           {
             accountId: expenseAccId,
             description: `Beban penyusutan ${asset.code}`,
@@ -252,14 +253,14 @@ export async function runDepreciation(
           sourceType: "DEPRECIATION",
           sourceId: asset.id,
           lines: journalLines,
-        } as any);
+        });
 
         await tx.fixedAsset.update({
           where: { id: asset.id },
           data: {
-            accumulatedDepreciation: { increment: depAmountNum },
-            bookValue: { decrement: depAmountNum },
-          } as any,
+            accumulatedDepreciation: toDec(asset.accumulatedDepreciation).plus(depAmount),
+            bookValue: toDec(asset.bookValue).minus(depAmount),
+          },
         });
 
         const depreciationData: Prisma.DepreciationEntryCreateInput = {

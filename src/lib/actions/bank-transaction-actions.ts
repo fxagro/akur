@@ -5,8 +5,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/auth-context";
 import { Prisma } from "@/generated/prisma/client";
-import { POSTING_CODES, resolveCashAccountId, postEntry, parseDay, money } from "@/lib/accounting/posting";
-import { nextJournalNumber, findPeriod } from "@/lib/accounting/journal";
+import { money } from "@/lib/accounting/posting";
 
 const transactionSchema = z.object({
   id: z.string().optional(),
@@ -173,7 +172,7 @@ const reconcileSchema = z.object({
   clearedTransactionIds: z.array(z.string()).default([]),
 });
 
-export async function saveReconciliation(input: unknown): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+export async function saveReconciliation(input: unknown): Promise<{ ok: true; id: string; difference: string } | { ok: false; error: string }> {
   const ctx = await requirePermission("bank.manage");
   const parsed = reconcileSchema.safeParse(input);
   if (!parsed.success) {
@@ -216,7 +215,7 @@ export async function saveReconciliation(input: unknown): Promise<{ ok: true; id
     revalidatePath("/bank/reconcile");
     revalidatePath("/bank/transactions");
     revalidatePath("/bank/accounts");
-    return { ok: true, id: "reconciled" };
+    return { ok: true, id: "reconciled", difference: result.difference };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Gagal merekonsiliasi." };
   }
@@ -224,7 +223,6 @@ export async function saveReconciliation(input: unknown): Promise<{ ok: true; id
 
 export async function getReconciliationData(bankAccountId: string, statementDate: string) {
   const ctx = await requirePermission("bank.view");
-  const date = new Date(`${statementDate}T23:59:59.999Z`);
 
   const ba = await prisma.bankAccount.findFirst({
     where: { id: bankAccountId, companyId: ctx.company.id },

@@ -1,5 +1,6 @@
 import { requirePermission } from "@/lib/auth-context";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/generated/prisma/client";
 import { BankTransactionsClient } from "@/components/bank-transactions-client";
 import { Card, PageHeader } from "@/components/ui";
 
@@ -18,7 +19,9 @@ export default async function BankTransactionsPage({
 
   const canManage = ctx.permissions.has("bank.manage");
 
-  const where: any = { companyId: ctx.company.id };
+  const where: Prisma.BankTransactionWhereInput = {
+    bankAccount: { companyId: ctx.company.id },
+  };
   if (bankAccountId) where.bankAccountId = bankAccountId;
   if (refType) where.refType = refType;
   if (date) {
@@ -100,18 +103,7 @@ export default async function BankTransactionsPage({
 
       <Card className="p-5">
         <BankTransactionsClient
-          rows={rows.map((r: any) => ({
-            id: r.id,
-            date: r.date,
-            description: r.description,
-            debit: r.debit,
-            credit: r.credit,
-            balance: r.balance,
-            isReconciled: r.isReconciled,
-            refType: r.refType,
-            refId: r.refId,
-            bankAccountId: r.bankAccountId,
-          }))}
+          rows={formatted}
           bankAccounts={bankAccounts.map((a) => ({ id: a.id, name: a.name, bankName: a.bankName, accountNumber: a.accountNumber ?? "" }))}
           canManage={canManage}
         />
