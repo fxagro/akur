@@ -1,39 +1,23 @@
-import chalk from "chalk";
-import ora from "ora";
-
-export async function upgrade(program: any) {
-  const coreOnly = program.core || false;
-  const modulesOnly = program.modules || false;
-
-  const spinner = ora("Checking for updates...").start();
-
-  try {
-    console.log(chalk.yellow("\n⚠️  Upgrade not fully implemented yet"));
-    console.log(chalk.gray("\nWould upgrade:"));
-    
-    if (!modulesOnly) {
-      console.log(chalk.gray("  • Akur core"));
-    }
-    
-    if (!coreOnly) {
-      console.log(chalk.gray("  • All installed modules"));
-    }
-
-    console.log(chalk.gray("\nSteps that would run:"));
-    console.log(chalk.gray("  1. Check for core updates"));
-    console.log(chalk.gray("  2. Check for module updates"));
-    console.log(chalk.gray("  3. Backup database"));
-    console.log(chalk.gray("  4. Apply core migrations"));
-    console.log(chalk.gray("  4. Apply module migrations"));
-    console.log(chalk.gray("  5. Restart services"));
-
-    console.log(chalk.yellow("\n⚠️  Upgrade not implemented yet"));
-  } catch (error) {
-    console.error("Upgrade failed:", error);
-    process.exit(1);
-  }
+export interface UpgradeOptions {
+  core: boolean;
+  modules: boolean;
+  flags: Record<string, string | boolean>;
 }
 
-export async function upgradeCommand(coreOnly = false, modulesOnly = false) {
-  console.log(`Upgrading (core: ${coreOnly}, modules: ${modulesOnly})...`);
+export async function upgrade(options: UpgradeOptions): Promise<void> {
+  const { core, modules } = options;
+  const doCore = core || !modules;
+  const doModules = modules || !core;
+
+  console.log("\nMemeriksa pembaruan...\n");
+  console.log("Cakupan upgrade:");
+  if (doCore) console.log("  • Akur core");
+  if (doModules) console.log("  • Semua modul terinstall");
+  console.log("\nLangkah yang akan dijalankan:");
+  console.log("  1. Backup database (pg_dump)");
+  console.log("  2. Update core ke versi terbaru");
+  if (doModules) console.log("  3. Update modul ke versi terbaru");
+  console.log("  4. Jalankan migrasi");
+  console.log("  5. Restart service (PM2)\n");
+  console.log("NOTE: upgrade otomatis belum aktif — langkah di atas simulasi.\n");
 }

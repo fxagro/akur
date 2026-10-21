@@ -1,44 +1,31 @@
-import chalk from "chalk";
-import ora from "ora";
-
-export async function removeModule(program: any) {
-  const moduleName = program.args[0];
-  const force = program.force || false;
-
-  if (!force) {
-    const confirm = await new Promise((resolve) => {
-      console.log(chalk.yellow(`\n⚠️  This will remove module ${moduleName} and all its data.`));
-      console.log(chalk.red("This action cannot be undone!"));
-      process.stdout.write(chalk.yellow("Are you sure? (y/N): "));
-      process.stdin.once("data", (data) => {
-        resolve(data.toString().trim().toLowerCase() === "y");
-      });
-    });
-
-    if (!confirm) {
-      console.log(chalk.gray("Cancelled."));
-      process.exit(0);
-    }
-  }
-
-  const spinner = ora(`Removing module ${moduleName}...`).start();
-
-  try {
-    console.log(chalk.yellow("\n⚠️  Module removal not fully implemented yet"));
-    console.log(chalk.gray(`Would remove: ${moduleName}`));
-    console.log(chalk.gray("Steps that would run:"));
-    console.log(chalk.gray("  1. Remove module routes"));
-    console.log(chalk.gray("  2. Drop module database tables"));
-    console.log(chalk.gray("  3. Remove module registry entry"));
-    console.log(chalk.gray("  4. Clean up module files"));
-
-    spinner.succeed(chalk.green(`Module ${moduleName} removal simulated`));
-  } catch (error) {
-    spinner.fail(`Failed to remove module: ${error}`);
-    process.exit(1);
-  }
+export interface RemoveOptions {
+  moduleName: string;
+  force: boolean;
+  flags: Record<string, string | boolean>;
 }
 
-export async function removeModuleCommand(module: string, force = false) {
-  console.log(`Removing ${module}...`);
+export async function removeModule(options: RemoveOptions): Promise<void> {
+  const { moduleName, force } = options;
+
+  if (!moduleName) {
+    console.error("Nama modul wajib diisi. Contoh: akur module:remove @akur/hr");
+    process.exitCode = 1;
+    return;
+  }
+
+  if (!force) {
+    console.log(`\nPERINGATAN: modul ${moduleName} dan seluruh datanya akan dihapus.`);
+    console.log("Tindakan ini tidak dapat dibatalkan.");
+    console.log("Jalankan ulang dengan --force untuk konfirmasi.\n");
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`\nMenghapus modul ${moduleName}...\n`);
+  console.log("Langkah yang akan dijalankan:");
+  console.log("  1. Copot route modul");
+  console.log("  2. Drop tabel database modul");
+  console.log("  3. Hapus entri module registry");
+  console.log("  4. Bersihkan berkas modul\n");
+  console.log("NOTE: penghapusan otomatis belum aktif — langkah di atas simulasi.\n");
 }

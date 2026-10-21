@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
@@ -10,17 +10,15 @@
       "persistent": true
     },
     "test": {
-      "outputs": ["coverage/**"],
-      "dependsOn": []
+      "dependsOn": ["^build"],
+      "outputs": []
     },
     "lint": {
       "outputs": []
     },
-    "db:push": {
-      "dependsOn": []
-    },
-    "db:migrate": {
-      "dependsOn": []
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
     }
   },
   "globalDependencies": [".env*"]

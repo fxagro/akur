@@ -1,3 +1,5 @@
+// Core types for Akur ERP
+
 export type UUID = string & { readonly __brand: unique symbol };
 
 export function uuid(): UUID {
@@ -69,43 +71,70 @@ export interface SortParams {
   direction: SortDirection;
 }
 
+function compareValues(a: unknown, b: unknown): number {
+  if (a === b) return 0;
+  if (a === null || a === undefined) return -1;
+  if (b === null || b === undefined) return 1;
+  if (typeof a === "number" && typeof b === "number") return a < b ? -1 : a > b ? 1 : 0;
+  if (a instanceof Date && b instanceof Date) {
+    const diff = a.getTime() - b.getTime();
+    return diff < 0 ? -1 : diff > 0 ? 1 : 0;
+  }
+  const sa = String(a);
+  const sb = String(b);
+  return sa < sb ? -1 : sa > sb ? 1 : 0;
+}
+
 export function sortBy<T>(data: T[], params: SortParams): T[] {
   return [...data].sort((a, b) => {
-    const aVal = (a as any)[params.field];
-    const bVal = (b as any)[params.field];
-    if (aVal < bVal) return params.direction === "asc" ? -1 : 1;
-    if (aVal > bVal) return params.direction === "asc" ? 1 : -1;
-    return 0;
+    const aVal = (a as unknown as Record<string, unknown>)[params.field];
+    const bVal = (b as unknown as Record<string, unknown>)[params.field];
+    return params.direction === "asc" ? compareValues(aVal, bVal) : -compareValues(aVal, bVal);
   });
 }
 
 export type FilterOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "contains" | "startsWith" | "endsWith" | "in" | "notIn";
 
+export type FilterValue = string | number | boolean | Date | null | undefined;
+
 export interface FilterCondition {
   field: string;
   operator: FilterOperator;
-  value: any;
+  value: FilterValue | FilterValue[];
 }
 
 export function applyFilters<T>(data: T[], filters: FilterCondition[]): T[] {
-  return data.filter((item) =>
-    filters.every((filter) => {
-      const value = (item as any)[filter.field];
+  return data.filter((item) => {
+    return filters.every((filter) => {
+      const value = (item as unknown as Record<string, unknown>)[filter.field] as FilterValue;
       switch (filter.operator) {
-        case "eq": return value === filter.value;
-        case "ne": return value !== filter.value;
-        case "gt": return value > filter.value;
-        case "gte": return value >= filter.value;
-        case "lt": return value < filter.value;
-        case "lte": return value <= filter.value;
-        case "contains": return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
-        case "startsWith": return String(value).toLowerCase().startsWith(String(filter.value).toLowerCase());
-        case "endsWith": return String(value).toLowerCase().endsWith(String(filter.value).toLowerCase());
-        case "in": return Array.isArray(filter.value) && filter.value.includes(value);
-        case "notIn": return Array.isArray(filter.value) && !filter.value.includes(value);
-        default: return true;
+        case "eq":
+          return value === filter.value;
+        case "ne":
+          return value !== filter.value;
+        case "gt":
+          return compareValues(value, filter.value) > 0;
+        case "gte":
+          return compareValues(value, filter.value) >= 0;
+        case "lt":
+          return compareValues(value, filter.value) < 0;
+        case "lte":
+          return compareValues(value, filter.value) <= 0;
+        case "contains":
+          return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+        case "startsWith":
+          return String(value).toLowerCase().startsWith(String(filter.value).toLowerCase());
+        case "endsWith":
+          return String(value).toLowerCase().endsWith(String(filter.value).toLowerCase());
+        case "in":
+          return Array.isArray(filter.value) && filter.value.includes(value);
+        case "notIn":
+          return Array.isArray(filter.value) && !filter.value.includes(value);
+        default:
+          return true;
       }
     });
+  });
 }
 
 export interface AuditFields {

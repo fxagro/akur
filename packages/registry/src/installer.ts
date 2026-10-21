@@ -1,26 +1,98 @@
-import { ModuleManifest, ModuleInstallOptions, ModuleInstallResult, ModuleSearchOptions, ModuleSearchResult, ModuleListOptions } from "./index";
+import { MODULE_CATALOG, type ModuleInfo } from "./catalog";
+
+export interface ModuleInstallOptions {
+  registry?: string;
+  version?: string;
+  force?: boolean;
+  dryRun?: boolean;
+}
+
+export interface ModuleInstallResult {
+  success: boolean;
+  module: string;
+  version: string;
+  path: string;
+  migrationsRun: string[];
+  warnings: string[];
+  errors: string[];
+}
+
+export interface ModuleSearchResult {
+  name: string;
+  version: string;
+  description: string;
+  tier: string;
+  tags: string[];
+}
+
+export interface ModuleSearchOptions {
+  query?: string;
+  tier?: string;
+  tag?: string;
+  limit?: number;
+}
+
+export const DEFAULT_REGISTRY_URL = "https://registry.akur.id";
 
 export class ModuleInstaller {
   private registryUrl: string;
 
-  constructor(registryUrl = "https://registry.akur.id") {
+  constructor(registryUrl = DEFAULT_REGISTRY_URL) {
     this.registryUrl = registryUrl;
   }
 
+  get registry(): string {
+    return this.registryUrl;
+  }
+
+  /** Cari modul di katalog lokal (offline). */
   async searchModules(options: ModuleSearchOptions = {}): Promise<ModuleSearchResult[]> {
-    // In real implementation, this would fetch from registry API
-    // For now, return mock data
-    return [];
+    const { query, tier, tag, limit = 50 } = options;
+    const q = query?.toLowerCase().trim();
+
+    return MODULE_CATALOG.filter((m) => {
+      if (tier && m.tier !== tier) return false;
+      if (tag && !m.tags.includes(tag)) return false;
+      if (!q) return true;
+      const haystack = `${m.name} ${m.description} ${m.tags.join(" ")}`.toLowerCase();
+      return haystack.includes(q);
+    })
+      .slice(0, limit)
+      .map((m) => ({
+        name: m.name,
+        version: m.version,
+        description: m.description,
+        tier: m.tier,
+        tags: m.tags,
+      }));
+  }
+
+  /** Ambil manifest modul dari katalog lokal. */
+  async fetchManifest(moduleName: string): Promise<ModuleInfo | null> {
+    return MODULE_CATALOG.find((m) => m.name === moduleName) ?? null;
+  }
+
+  /** Periksa kompatibilitas versi Akur core. */
+  async checkCompatibility(
+    manifest: ModuleInfo,
+    currentCoreVersion = "0.1.0"
+  ): Promise<{ compatible: boolean; reason?: string }> {
+    const [coreMajor] = currentCoreVersion.split(".");
+    const [modMajor] = manifest.version.split(".");
+    if (Number(modMajor) > Number(coreMajor)) {
+      return {
+        compatible: false,
+        reason: `Modul membutuhkan Akur core >= ${modMajor}.0, tersedia ${currentCoreVersion}`,
+      };
+    }
+    return { compatible: true };
   }
 
   async installModule(
     moduleName: string,
     options: ModuleInstallOptions = {}
   ): Promise<ModuleInstallResult> {
-    const { version = "latest", force = false, dryRun = false } = options;
-
-    // 1. Resolve module from registry
-    const manifest = await this.fetchManifest(moduleName, options.version);
+    const manifest = await this.fetchManifest(moduleName);
     if (!manifest) {
       return {
         success: false,
@@ -29,13 +101,12 @@ export class ModuleInstaller {
         path: "",
         migrationsRun: [],
         warnings: [],
-        errors: [`Module ${moduleName} not found in registry`],
+        errors: [`Modul ${moduleName} tidak ditemukan di registry`],
       };
     }
 
-    // 2. Check compatibility
-    const compatibility = await this.checkCompatibility(manifest);
-    if (!compatibility.compatible && !options.force) {
+    const compat = await this.checkCompatibility(manifest);
+    if (!compat.compatible && !options.force) {
       return {
         success: false,
         module: "",
@@ -43,34 +114,19 @@ export class ModuleInstaller {
         path: "",
         migrationsRun: [],
         warnings: [],
-        errors: [`Module ${moduleName} requires Akur >= ${manifest.minAkurVersion}, current version incompatible`],
+        errors: [compat.reason ?? "Modul tidak kompatibel dengan versi core saat ini"],
       };
     }
 
-    // 3. Check if already installed
-    // 4. Download and extract module
-    // 5. Run migrations
-    // 6. Register module
-
     return {
       success: true,
-      module: "",
-      version: "",
-      path: "",
+      module: manifest.name,
+      version: options.version ?? manifest.version,
+      path: `packages/${manifest.name.replace("@akur/", "")}`,
       migrationsRun: [],
-      warnings: [],
+      warnings: ["Registry online belum aktif — instalasi disimulasikan"],
       errors: [],
     };
-  }
-
-  async fetchManifest(moduleName: string, version = "latest"): Promise<any> {
-    // In real implementation, fetch from registry API
-    return null;
-  }
-
-  async checkCompatibility(manifest: any): Promise<{ compatible: boolean; reason?: string }> {
-    // Check Akur version compatibility
-    return { compatible: true };
   }
 }
 

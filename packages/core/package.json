@@ -1,37 +1,47 @@
 {
-  "name": "@akur/core",
-  "version": "0.1.0",
-  "private": true,
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
-    },
-    "./lib/*": "./dist/lib/*.js",
-    "./types/*": "./dist/types/*.d.ts",
-    "./utils/*": "./dist/utils/*.js"
-  },
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "lint": "eslint src --ext .ts",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@prisma/client": "^5.0.0",
-    "zod": "^3.22.0",
-    "bcryptjs": "^2.4.3",
-    "date-fns": "^3.6.0",
-    "ulid": "^2.3.0"
-  },
-  "devDependencies": {
-    "typescript": "^5.4.0",
-    "@types/node": "^20.0.0",
-    "@types/bcryptjs": "^2.4.0",
-    "eslint": "^8.0.0",
-    "jest": "^29.0.0",
-    "@types/jest": "^29.0.0"
-  }
+    "name":  "@akur/core",
+    "version":  "0.1.0",
+    "description":  "Shared types \u0026 utilities untuk Akur ERP",
+    "license":  "MIT",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "https://github.com/fxagro/akur.git",
+                       "directory":  "packages/core"
+                   },
+    "publishConfig":  {
+                          "access":  "public"
+                      },
+    "main":  "dist/index.js",
+    "types":  "dist/index.d.ts",
+    "exports":  {
+                    ".":  {
+                              "types":  "./dist/index.d.ts",
+                              "import":  "./dist/index.js",
+                              "default":  "./dist/index.js"
+                          },
+                    "./lib/*":  "./dist/lib/*.js",
+                    "./types/*":  "./dist/types/*.d.ts",
+                    "./utils/*":  "./dist/utils/*.js"
+                },
+    "bin":  null,
+    "files":  [
+                  "dist"
+              ],
+    "scripts":  {
+                    "build":  "tsc -p tsconfig.build.json",
+                    "dev":  "tsc --watch",
+                    "typecheck":  "tsc --noEmit",
+                    "lint":  "eslint src --ext .ts",
+                    "test":  "node --import tsx --test \"src/**/*.test.ts\""
+                },
+    "dependencies":  {
+                         "bcryptjs":  "^3.0.3",
+                         "date-fns":  "^4.4.0",
+                         "zod":  "^4.6.7"
+                     },
+    "devDependencies":  {
+                            "@types/bcryptjs":  "^2.4.6",
+                            "@types/node":  "^20",
+                            "typescript":  "^5"
+                        }
 }

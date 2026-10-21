@@ -1,20 +1,39 @@
 {
   "name": "@akur/registry",
   "version": "0.1.0",
-  "private": true,
+  "description": "Katalog modul dan installer untuk Akur ERP",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fxagro/akur.git",
+    "directory": "packages/registry"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "dev": "tsc --watch",
-    "test": "jest"
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test \"src/**/*.test.ts\""
   },
   "dependencies": {
-    "@akur/core": "workspace:*",
-    "zod": "^3.22.0"
+    "@akur/core": "*"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20",
+    "typescript": "^5"
   }
 }

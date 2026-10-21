@@ -17,6 +17,10 @@
 /.next/
 /out/
 
+# monorepo packages
+dist/
+.turbo/
+
 # production
 /build
 

@@ -1,7 +1,23 @@
-import { ulid } from "ulid";
-
+/**
+ * Generate a sortable unique ID (ULID-like, Crockford base32).
+ * Tanpa dependency eksternal.
+ */
 export function generateId(): string {
-  return ulid();
+  const time = Date.now();
+  const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  let timePart = "";
+  let t = time;
+  for (let i = 0; i < 10; i++) {
+    timePart = ALPHABET[t % 32] + timePart;
+    t = Math.floor(t / 32);
+  }
+  const rand = new Uint8Array(16);
+  crypto.getRandomValues(rand);
+  let randPart = "";
+  for (let i = 0; i < 16; i++) {
+    randPart += ALPHABET[(rand[i] ?? 0) % 32];
+  }
+  return timePart + randPart;
 }
 
 export function generateCode(prefix: string, sequence: number, length = 4): string {
@@ -46,9 +62,15 @@ export function kebabCase(text: string): string {
     .replace(/\s+/g, "-");
 }
 
+/**
+ * Pilih bentuk kata sesuai jumlah.
+ *
+ * Bahasa Indonesia tidak memakai akhiran jamak (nilai "aset" tetap "aset"),
+ * sehingga bentuk jamak harus diberikan eksplisit bila berbeda.
+ */
 export function pluralize(count: number, singular: string, plural?: string): string {
   if (count === 1) return singular;
-  return plural || singular + "s";
+  return plural ?? singular;
 }
 
 export function formatRelativeTime(date: Date, locale = "id-ID"): string {
@@ -64,25 +86,28 @@ export function formatRelativeTime(date: Date, locale = "id-ID"): string {
   return rtf.format(diffMinutes, "minute");
 }
 
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: never[]) => unknown>(
   fn: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   return (...args: Parameters<T>) => {
     clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => fn(...args), delay);
+    timeoutId = setTimeout(
+      () => (fn as unknown as (...a: Parameters<T>) => unknown)(...args),
+      delay
+    );
   };
 }
 
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: never[]) => unknown>(
   fn: T,
   limit: number
 ): (...args: Parameters<T>) => void {
   let inThrottle = false;
   return (...args: Parameters<T>) => {
     if (!inThrottle) {
-      fn(...args);
+      (fn as unknown as (...a: Parameters<T>) => unknown)(...args);
       inThrottle = true;
       setTimeout(() => (inThrottle = false), limit);
     }
@@ -93,24 +118,26 @@ export function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
-export function omit<T extends Record<string, any>, K extends keyof T>(
+export function omit<T extends object, K extends keyof T>(
   obj: T,
   keys: K[]
 ): Omit<T, K> {
-  const result = { ...obj };
-  keys.forEach((key) => delete result[key]);
-  return result;
+  const result = { ...obj } as unknown as Record<string, unknown>;
+  keys.forEach((key) => delete result[String(key)]);
+  return result as Omit<T, K>;
 }
 
-export function pick<T extends Record<string, any>, K extends keyof T>(
+export function pick<T extends object, K extends keyof T>(
   obj: T,
   keys: K[]
 ): Pick<T, K> {
-  const result = {} as Pick<T, K>;
+  const result: Record<string, unknown> = {};
+  const source = obj as unknown as Record<string, unknown>;
   keys.forEach((key) => {
-    if (key in obj) result[key] = obj[key];
+    const k = String(key);
+    if (k in source) result[k] = source[k];
   });
-  return result;
+  return result as Pick<T, K>;
 }
 
 export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
@@ -178,8 +205,8 @@ export function generateOtp(length = 6): string {
 }
 
 export function maskEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (local.length <= 2) return `${local[0]}***@${domain}`;
+  const [local = "", domain = ""] = email.split("@");
+  if (local.length <= 2) return `${local[0] ?? ""}***@${domain}`;
   return `${local[0]}${local[1]}***@${domain}`;
 }
 
@@ -207,7 +234,7 @@ export function parseQueryString(query: string): Record<string, string> {
   return result;
 }
 
-export function buildQueryString(params: Record<string, any>): string {
+export function buildQueryString(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {

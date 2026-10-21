@@ -15,8 +15,6 @@ export const CORE_CONSTANTS = {
   OTP_EXPIRY_MINUTES: 10,
   MAX_FILE_SIZE: 10 * 1024 * 1024,
   ALLOWED_FILE_TYPES: ["image/jpeg", "image/png", "image/webp", "application/pdf", "text/csv", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"] as const,
-  DEFAULT_PAGE_SIZE: 20,
-  MAX_PAGE_SIZE: 100,
 } as const;
 
 export const ERROR_CODES = {

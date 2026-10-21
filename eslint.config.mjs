@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Monorepo build artifacts:
+    "packages/*/dist/**",
+    "packages/*/node_modules/**",
+    "node_modules/**",
+    "src/generated/**",
   ]),
 ]);
 
